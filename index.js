@@ -112,7 +112,32 @@ app.delete("/api/posts/:id", async (req, res) => {
 });
 
 
+// Create a PATCH API endpoint to update a post
+// PATCH to update a post by ID
+app.patch('/api/posts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;  // Get the post ID from the URL
+    const { postTitle, postDescription, tag, upVote, downVote } = req.body;
 
+    // Find and update the post by ID
+    const updatedPost = await Post.findByIdAndUpdate(id, {
+      postTitle,
+      postDescription,
+      tag,
+      upVote,
+      downVote
+    }, { new: true });  // Return the updated post
+
+    if (!updatedPost) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    res.status(200).json({ message: "Post updated successfully", post: updatedPost });
+  } catch (error) {
+    console.error("Error updating post:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // Start the server
 app.listen(3000, () => {
