@@ -13,7 +13,12 @@ mongoose
   .connect(uri)
   .then(() => console.log("Connection successful"))
   .catch((err) => console.log("Database connection error:", err));
-
+  const commentSchema = new mongoose.Schema({
+    authorName: { type: String, required: true },
+    authorEmail: { type: String, required: true },
+    text: { type: String, required: true },
+    date: { type: Date, default: Date.now }
+  });
 // Define a schema
 const postSchema = new mongoose.Schema({
   authorImage: { type: String, required: true },
@@ -21,15 +26,59 @@ const postSchema = new mongoose.Schema({
   authorEmail: { type: String, required: true },
   postTitle: { type: String, required: true },
   postDescription: { type: String, required: true },
-  tag: { type: String, required: true },
+  tag: [{ type: String, required: true }],
   upVote: { type: Number, required: true },
   downVote: { type: Number, required: true },
   date: { type: Date, default: Date.now },
+  comments: [commentSchema], // Embedded comments
 
 });
 
 // Create a model
 const Post = mongoose.model("Post", postSchema);
+
+
+app.post('/api/posts/:id/comments', async (req, res) => {
+  try {
+    const { id } = req.params; // Post ID
+    const { authorName, authorEmail, text } = req.body;
+
+    if (!authorName || !authorEmail || !text) {
+      return res.status(400).json({ error: "All fields are required for a comment." });
+    }
+
+    const post = await Post.findById(id);
+    if (!post) {
+      return res.status(404).json({ error: "Post not found." });
+    }
+
+    const newComment = { authorName, authorEmail, text };
+    post.comments.push(newComment); // Add comment to the post's comments array
+    await post.save();
+
+    res.status(201).json({ message: "Comment added successfully.", comment: newComment });
+  } catch (err) {
+    console.error("Error adding comment:", err);
+    res.status(500).json({ error: "Failed to add comment." });
+  }
+});
+
+
+app.get('/api/posts/:id/comments', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const post = await Post.findById(id);
+    if (!post) {
+      return res.status(404).json({ error: "Post not found." });
+    }
+
+    res.status(200).json({ comments: post.comments });
+  } catch (err) {
+    console.error("Error fetching comments:", err);
+    res.status(500).json({ error: "Failed to fetch comments." });
+  }
+});
 
 // Create an API endpoint to handle POST requests
 app.post('/api/posts', async (req, res) => {
@@ -86,6 +135,20 @@ app.get("/api/posts", async (req, res) => {
     }
   });
   
+
+// Get Post by ID
+app.get('/api/posts/:id', async (req, res) => { // Changed to /api/posts/:id
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+    res.json({ post }); // Wrap the post in an object to match frontend expectation
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 
   // Create a DELETE API endpoint to delete a post
 app.delete("/api/posts/:id", async (req, res) => {
