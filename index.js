@@ -73,6 +73,22 @@ app.post('/api/posts', async (req, res) => {
 
 
 
+// Create a GET API endpoint to fetch all posts
+app.get("/api/posts", async (req, res) => {
+    try {
+      // Fetch all posts from the database
+      const posts = await Post.find().sort({ date: -1 });  // Sort by date, latest first
+
+      res.status(200).json({ message: "Posts retrieved successfully", posts });
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
+
+
+
 // Start the server
 app.listen(3000, () => {
   console.log("App listening at port 3000");
