@@ -87,6 +87,31 @@ app.get("/api/posts", async (req, res) => {
   });
   
 
+  // Create a DELETE API endpoint to delete a post
+app.delete("/api/posts/:id", async (req, res) => {
+  try {
+    const { id } = req.params; // Get postId from the request parameters
+
+    // Find and delete the post by its ID
+    const deletedPost = await Post.findByIdAndDelete(id);
+
+    // If no post was found, return an error message
+    if (!deletedPost) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    // Send response after successful deletion
+    res.status(200).json({ message: "Post deleted successfully", post: deletedPost });
+  } catch (error) {
+    // Log error details for debugging
+    console.error("Error deleting post:", error);
+
+    // Send error response
+    res.status(500).json({ error: "Internal server error", details: error.message });
+  }
+});
+
+
 
 
 // Start the server
