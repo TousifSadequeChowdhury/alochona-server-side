@@ -1,6 +1,11 @@
+  
 const cors = require('cors');
 const express = require("express");
 const mongoose = require("mongoose");
+//AI
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const genAI = new GoogleGenerativeAI("AIzaSyAWMQnN-5crRjI6j26e0PigZJVW0ZIdk8w");
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 const app = express();
 app.use(cors());
@@ -36,6 +41,40 @@ const postSchema = new mongoose.Schema({
 
 // Create a model
 const Post = mongoose.model("Post", postSchema);
+
+
+
+
+
+app.get("/testai", async (req, res) => {
+  try {
+      const userInput = req.query?.prompt;
+
+      // Structured prompt to avoid any Markdown or special formatting
+      const prompt = `Generate a plain, unformatted response based on the topic: "${userInput}". 
+      The response should include:
+      - A catchy and engaging title.
+      - A well-structured, article-style description (at least 150 words).
+      Do not use any Markdown formatting or bold text. The output should be plain text only, formatted as:
+      Title: [Your title here]
+      Description: [Your detailed description here]`;
+
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+
+      // Extract title and description using regex
+      const titleMatch = text.match(/Title:\s*(.+)/i);
+      const descriptionMatch = text.match(/Description:\s*([\s\S]+)/i);
+
+      const title = titleMatch ? titleMatch[1].trim() : "Generated Title";
+      const description = descriptionMatch ? descriptionMatch[1].trim() : "Generated Description";
+
+      res.send({ title, description });
+  } catch (error) {
+      res.status(500).send({ error: "AI response failed" });
+  }
+});
+
 
 
 app.post('/api/posts/:id/comments', async (req, res) => {
