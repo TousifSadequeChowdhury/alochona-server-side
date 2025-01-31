@@ -1,23 +1,26 @@
-  
+const mongoose = require("mongoose");
 const cors = require('cors');
 const express = require("express");
-const mongoose = require("mongoose");
-//AI
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const genAI = new GoogleGenerativeAI("AIzaSyAWMQnN-5crRjI6j26e0PigZJVW0ZIdk8w");
+
+// AI setup
+const genAI = new GoogleGenerativeAI(process.env.GENAI_API_KEY);  // Use the API key from .env
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connection URI
-const uri = "mongodb+srv://alochonaadmin:abcd1234@cluster0.8emp0.mongodb.net/AllPost?retryWrites=true&w=majority&appName=Cluster0";
+// MongoDB connection URI from .env
+const uri = process.env.MONGO_URI;  // Using the value from .env
 
 mongoose
   .connect(uri)
   .then(() => console.log("Connection successful"))
   .catch((err) => console.log("Database connection error:", err));
+
+// Define schemas and routes (existing code follows)
+
   const commentSchema = new mongoose.Schema({
     authorName: { type: String, required: true },
     authorEmail: { type: String, required: true },
@@ -46,7 +49,7 @@ const Post = mongoose.model("Post", postSchema);
 
 
 
-app.get("/testai", async (req, res) => {
+app.get("/ai", async (req, res) => {
   try {
       const userInput = req.query?.prompt;
 
