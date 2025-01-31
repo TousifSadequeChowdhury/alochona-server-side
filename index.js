@@ -92,7 +92,7 @@ app.post('/api/posts/:id/comments', async (req, res) => {
     }
 
     const newComment = { authorName, authorEmail, text };
-    post.comments.push(newComment); // Add comment to the post's comments array
+    post.comments.push(newComment); 
     await post.save();
 
     res.status(201).json({ message: "Comment added successfully.", comment: newComment });
@@ -214,32 +214,41 @@ app.delete("/api/posts/:id", async (req, res) => {
 });
 
 
-// Create a PATCH API endpoint to update a post
-// PATCH to update a post by ID
-app.patch('/api/posts/:id', async (req, res) => {
+app.patch('/api/posts/:id/vote', async (req, res) => {
   try {
-    const { id } = req.params;  // Get the post ID from the URL
-    const { postTitle, postDescription, tag, upVote, downVote } = req.body;
+    const { id } = req.params;
+    const { type, userId } = req.body;
 
-    // Find and update the post by ID
-    const updatedPost = await Post.findByIdAndUpdate(id, {
-      postTitle,
-      postDescription,
-      tag,
-      upVote,
-      downVote
-    }, { new: true });  // Return the updated post
-
-    if (!updatedPost) {
-      return res.status(404).json({ error: "Post not found" });
+    if (!['upVote', 'downVote'].includes(type)) {
+      return res.status(400).json({ error: "Invalid vote type." });
     }
 
-    res.status(200).json({ message: "Post updated successfully", post: updatedPost });
+    const post = await Post.findById(id);
+    if (!post) {
+      return res.status(404).json({ error: "Post not found." });
+    }
+
+    // Check if the user has already voted
+    if (post.votedBy?.[userId]) {
+      return res.status(400).json({ error: "You have already voted." });
+    }
+
+    // Update vote count and store user vote
+    const update = {
+      $inc: { [type]: 1 },
+      $set: { [`votedBy.${userId}`]: type }, // Store user's vote
+    };
+
+    const updatedPost = await Post.findByIdAndUpdate(id, update, { new: true });
+
+    res.status(200).json({ message: "Vote recorded successfully", post: updatedPost });
   } catch (error) {
-    console.error("Error updating post:", error);
+    console.error("Error updating vote:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+
 
 // Start the server
 app.listen(3000, () => {
